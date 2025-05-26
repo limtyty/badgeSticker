@@ -41,6 +41,26 @@ def shrink_text_to_fit(pdf, text, font, max_width, max_size=MAX_FONT_SIZE, min_s
         pdf.set_font(font, "", size)
     return size
 
+# --- Utility: Wrap text to fit within max width ---
+def wrap_text(pdf, text, font, font_size, max_width):
+    pdf.set_font(font, "", font_size)
+    words = text.split()
+    lines = []
+    current_line = ""
+    
+    for word in words:
+        test_line = current_line + word + " "
+        if pdf.get_string_width(test_line.strip()) <= max_width:
+            current_line = test_line
+        else:
+            if current_line:
+                lines.append(current_line.strip())
+            current_line = word + " "
+    if current_line:
+        lines.append(current_line.strip())
+    
+    return lines
+
 # --- PDF Generator Class ---
 class GridPDF(FPDF):
     def __init__(self):
@@ -68,33 +88,29 @@ class GridPDF(FPDF):
             # Draw border
             self.rect(x, y, CELL_WIDTH, CELL_HEIGHT)
 
-            # Prepare 3 lines with shrink-to-fit font
+            # Prepare text entries with wrapping
+            entries = [
+                ('Full Name', FONT_MULI, str(row['Full Name'])),
+                ('Position', FONT_DIN, str(row['Position'])),
+                ('Company', FONT_DIN, str(row['Company']))
+            ]
+
             lines = []
-
-            # Full Name (Muli)
-            name = str(row['Full Name'])
-            name_size = shrink_text_to_fit(self, name, FONT_MULI, max_width)
-            lines.append((name, FONT_MULI, name_size))
-
-            # Title (DIN)
-            title = str(row['Position'])
-            title_size = shrink_text_to_fit(self, title, FONT_DIN, max_width)
-            lines.append((title, FONT_DIN, title_size))
-
-            # Company (DIN)
-            company = str(row['Company'])
-            company_size = shrink_text_to_fit(self, company, FONT_DIN, max_width)
-            lines.append((company, FONT_DIN, company_size))
+            for field, font, text in entries:
+                font_size = shrink_text_to_fit(self, text, font, max_width)
+                wrapped_lines = wrap_text(self, text, font, font_size, max_width)
+                lines.extend([(line, font, font_size) for line in wrapped_lines])
 
             # Center vertically
             total_height = len(lines) * LINE_HEIGHT
-            start_y = y + (CELL_HEIGHT - total_height) / 2
+            start_y = y + (CELL_HEIGHT - total_height) / 2 if total_height < CELL_HEIGHT else y
 
+            # Draw wrapped text
             for i, (text, font_name, font_size) in enumerate(lines):
-                self.set_font(font_name, "", font_size)
-                self.set_xy(x + PADDING, start_y + i * LINE_HEIGHT)
-                self.cell(max_width, LINE_HEIGHT, text, align='C')
-
+                if start_y + i * LINE_HEIGHT + LINE_HEIGHT <= y + CELL_HEIGHT:  # Ensure text fits in cell
+                    self.set_font(font_name, "", font_size)
+                    self.set_xy(x + PADDING, start_y + i * LINE_HEIGHT)
+                    self.cell(max_width, LINE_HEIGHT, text, align='C')
 
 # --- Streamlit App ---
 st.set_page_config(page_title="PDF Badge Generator", layout="wide")
