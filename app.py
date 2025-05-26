@@ -77,7 +77,7 @@ class GridPDF(FPDF):
             lines.append((name, FONT_MULI, name_size))
 
             # Title (DIN)
-            title = str(row['Title'])
+            title = str(row['Position'])
             title_size = shrink_text_to_fit(self, title, FONT_DIN, max_width)
             lines.append((title, FONT_DIN, title_size))
 
@@ -98,7 +98,7 @@ class GridPDF(FPDF):
 
 # --- Streamlit App ---
 st.set_page_config(page_title="PDF Badge Generator", layout="wide")
-st.title("📄 PDF Generator — 4x8 Grid, Centered, Shrink-Wrap, 2-Line Support")
+st.title("PDF Generator — 4x8 Badge Canada Cambodia Mission")
 
 uploaded_file = st.file_uploader("Upload Excel file", type=["xlsx"])
 
@@ -118,9 +118,9 @@ else:
         try:
             df = pd.read_excel(uploaded_file)
 
-            required = {"Full Name", "Title", "Company"}
+            required = {"Full Name", "Position", "Company"}
             if not required.issubset(df.columns):
-                st.error("❌ Excel must contain: Full Name, Title, Company")
+                st.error("❌ Excel must contain: Full Name, Position, Company")
             else:
                 st.success("✅ Excel loaded successfully!")
                 st.dataframe(df)
