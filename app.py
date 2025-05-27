@@ -88,12 +88,17 @@ class GridPDF(FPDF):
             # Draw border
             self.rect(x, y, CELL_WIDTH, CELL_HEIGHT)
 
-            # Prepare text entries with wrapping
-            entries = [
-                ('Full Name', FONT_MULI, str(row['Full Name'])),
-                ('Position', FONT_DIN, str(row['Position'])),
-                ('Company', FONT_DIN, str(row['Company']))
-            ]
+            # Prepare text entries with wrapping, only include non-empty and non-NaN fields
+            entries = []
+            for field, font, key in [
+                ('Full Name', FONT_MULI, 'Full Name'),
+                ('Position', FONT_DIN, 'Position'),
+                ('Company', FONT_DIN, 'Company')
+            ]:
+                value = str(row.get(key, ''))
+                # Skip if value is NaN, None, empty, or 'nan' (case-insensitive)
+                if pd.notna(value) and value.strip() and value.lower() != 'nan':
+                    entries.append((field, font, value))
 
             lines = []
             for field, font, text in entries:
